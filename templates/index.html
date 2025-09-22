@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noah de la Calzada - AI Portfolio Assistant</title>
+    <meta name="description" content="Chat with Noah's AI assistant to learn about his professional background, experience, and qualifications.">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Google Analytics - Replace GA_TRACKING_ID with your actual tracking ID -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=GA_TRACKING_ID"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'GA_TRACKING_ID', {
+            // Enhanced tracking options
+            send_page_view: true,
+            anonymize_ip: true,
+            allow_google_signals: false
+        });
+        
+        // Custom event tracking function
+        function trackChatEvent(action, question = '') {
+            gtag('event', action, {
+                event_category: 'Chat',
+                event_label: question.substring(0, 50), // First 50 chars for privacy
+                value: 1
+            });
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section with Professional Headshot -->
+        <header class="header">
+            <div class="header-content">
+                <div class="profile-section">
+                    <div class="profile-image">
+                        <img src="{{ url_for('static', filename='noah-headshot.jpg') }}" 
+                             alt="Noah de la Calzada - Professional Headshot" 
+                             id="headshot"
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="headshot-fallback" style="display: none;">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                        <div class="profile-status">
+                            <div class="status-indicator"></div>
+                            <span>Available for Opportunities</span>
+                        </div>
+                    </div>
+                    <div class="profile-info">
+                        <h1>Noah de la Calzada</h1>
+                        <h2>Sales Professional & Business Development Expert</h2>
+                        <p class="tagline">Combining analytical thinking with proven sales expertise to drive business growth</p>
+                        <div class="quick-stats">
+                            <div class="stat">
+                                <i class="fas fa-chart-line"></i>
+                                <span>B2B & B2C Sales</span>
+                            </div>
+                            <div class="stat">
+                                <i class="fas fa-graduation-cap"></i>
+                                <span>Biological Sciences Degree</span>
+                            </div>
+                            <div class="stat">
+                                <i class="fas fa-certificate"></i>
+                                <span>Professional Certifications</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Chat Interface Section -->
+            <section class="chatbot-section">
+                <div class="chatbot-header">
+                    <div class="chatbot-title">
+                        <i class="fas fa-robot"></i>
+                        <h3>Ask About My Professional Background</h3>
+                    </div>
+                    <p class="chatbot-subtitle">Get instant answers about my experience, skills, and qualifications</p>
+                </div>
+
+                <div class="chat-container">
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message bot-message welcome-message">
+                            <div class="message-avatar">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <div class="message-content">
+                                <p>👋 Hello! I'm Noah's AI assistant. I can answer questions about his professional background, experience, skills, and qualifications. What would you like to know?</p>
+                                <div class="suggested-questions">
+                                    <button class="suggestion-btn" onclick="askSuggestedQuestion('What is Noah\'s professional background?')">
+                                        Professional Background
+                                    </button>
+                                    <button class="suggestion-btn" onclick="askSuggestedQuestion('Tell me about Noah\'s sales experience')">
+                                        Sales Experience
+                                    </button>
+                                    <button class="suggestion-btn" onclick="askSuggestedQuestion('What education does Noah have?')">
+                                        Education
+                                    </button>
+                                    <button class="suggestion-btn" onclick="askSuggestedQuestion('What skills does Noah possess?')">
+                                        Skills & Expertise
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chat-input-container">
+                        <div class="input-group">
+                            <input 
+                                type="text" 
+                                id="messageInput" 
+                                placeholder="Ask about Noah's experience, skills, or background..." 
+                                maxlength="500"
+                                autocomplete="off"
+                            >
+                            <button id="sendButton" onclick="sendMessage()" disabled>
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                        <div class="input-footer">
+                            <small>Press Enter to send • Powered by OpenAI GPT-4 • <span id="sessionInfo"></span></small>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Knowledge Base Status -->
+            <section class="status-section">
+                <div class="status-card">
+                    <div class="status-info">
+                        <i class="fas fa-database"></i>
+                        <span>Knowledge Base Status</span>
+                        <div class="status-badge" id="statusBadge">Ready</div>
+                    </div>
+                    <button id="initializeBtn" onclick="initializeKnowledgeBase()" class="initialize-btn">
+                        <i class="fas fa-sync-alt"></i>
+                        Initialize Knowledge Base
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="social-links">
+                    <a href="#" class="social-link" title="LinkedIn" onclick="trackChatEvent('social_click', 'linkedin')">
+                        <i class="fab fa-linkedin-in"></i>
+                    </a>
+                    <a href="#" class="social-link" title="GitHub" onclick="trackChatEvent('social_click', 'github')">
+                        <i class="fab fa-github"></i>
+                    </a>
+                    <a href="#" class="social-link" title="Email" onclick="trackChatEvent('social_click', 'email')">
+                        <i class="fas fa-envelope"></i>
+                    </a>
+                </div>
+                <p>&copy; 2024 Noah de la Calzada. Built with AI & Modern Web Technologies.</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p id="loadingText">Processing your question...</p>
+        </div>
+    </div>
+
+    <!-- Chat JavaScript -->
+    <script>
+        // Portfolio Chatbot Class with Analytics Integration
+        class PortfolioChatbot {
+            constructor() {
+                this.chatMessages = document.getElementById('chatMessages');
+                this.messageInput = document.getElementById('messageInput');
+                this.sendButton = document.getElementById('sendButton');
+                this.initializeBtn = document.getElementById('initializeBtn');
+                this.loadingOverlay = document.getElementById('loadingOverlay');
+                this.sessionInfo = document.getElementById('sessionInfo');
+                this.statusBadge = document.getElementById('statusBadge');
+                
+                this.sessionId = this.getOrCreateSessionId();
+                this.messageCount = 0;
+                
+                this.initializeEventListeners();
+                this.updateSessionInfo();
+                
+                // Track page visit
+                if (typeof trackChatEvent !== 'undefined') {
+                    trackChatEvent('page_visit');
+                }
+            }
+
+            getOrCreateSessionId() {
+                let sessionId = localStorage.getItem('chat_session_id');
+                if (!sessionId) {
+                    sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem('chat_session_id', sessionId);
+                    localStorage.setItem('session_start_time', new Date().toISOString());
+                }
+                return sessionId;
+            }
+
+            updateSessionInfo() {
+                const startTime = localStorage.getItem('session_start_time');
+                if (startTime) {
+                    const duration = Math.floor((new Date() - new Date(startTime)) / 1000 / 60);
+                    this.sessionInfo.textContent = `Session: ${duration}m`;
+                }
+            }
+
+            initializeEventListeners() {
+                // Send button click
+                this.sendButton.addEventListener('click', () => this.sendMessage());
+                
+                // Enter key press
+                this.messageInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendMessage();
+                    }
+                });
+                
+                // Input validation
+                this.messageInput.addEventListener('input', (e) => {
+                    const message = e.target.value.trim();
+                    this.sendButton.disabled = !message;
+                });
+                
+                // Initialize button click
+                this.initializeBtn.addEventListener('click', () => this.initializeKnowledgeBase());
+                
+                // Auto-focus on input
+                this.messageInput.focus();
+                
+                // Update session info periodically
+                setInterval(() => this.updateSessionInfo(), 30000); // Every 30 seconds
+            }
+
+            async sendMessage() {
+                const message = this.messageInput.value.trim();
+                
+                if (!message) {
+                    this.showNotification('Please enter a message.', 'error');
+                    return;
+                }
+
+                // Track chat start
+                if (typeof trackChatEvent !== 'undefined') {
+                    trackChatEvent('chat_message_sent', message);
+                }
+
+                // Disable input while processing
+                this.setInputState(false);
+                this.showLoading(true);
+
+                // Add user message to chat
+                this.addMessage(message, 'user');
+                this.messageInput.value = '';
+                this.messageCount++;
+
+                try {
+                    const response = await fetch('/api/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ 
+                            message: message,
+                            session_id: this.sessionId
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        this.addMessage(data.response, 'bot');
+                        this.updateStatusBadge('active');
+                        
+                        // Track successful response
+                        if (typeof trackChatEvent !== 'undefined') {
+                            trackChatEvent('chat_response_received', message);
+                        }
+                    } else {
+                        this.addMessage(`Error: ${data.error || 'Failed to get response'}`, 'bot', true);
+                        this.updateStatusBadge('error');
+                        
+                        // Track error
+                        if (typeof trackChatEvent !== 'undefined') {
+                            trackChatEvent('chat_error', data.error);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    this.addMessage('Sorry, there was an error connecting to the server. Please try again.', 'bot', true);
+                    this.updateStatusBadge('error');
+                    
+                    // Track error
+                    if (typeof trackChatEvent !== 'undefined') {
+                        trackChatEvent('chat_connection_error', error.message);
+                    }
+                } finally {
+                    this.setInputState(true);
+                    this.showLoading(false);
+                }
+            }
+
+            async initializeKnowledgeBase() {
+                this.initializeBtn.disabled = true;
+                this.initializeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Initializing...';
+                this.updateStatusBadge('initializing');
+
+                try {
+                    const response = await fetch('/api/initialize', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        this.showNotification('Knowledge base initialized successfully!', 'success');
+                        this.addMessage('Great! The knowledge base has been updated. You can now ask questions about Noah\'s professional background.', 'bot');
+                        this.updateStatusBadge('ready');
+                        
+                        // Track initialization
+                        if (typeof trackChatEvent !== 'undefined') {
+                            trackChatEvent('knowledge_base_initialized');
+                        }
+                    } else {
+                        this.showNotification(data.error || 'Failed to initialize knowledge base', 'error');
+                        this.updateStatusBadge('error');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    this.showNotification('Failed to initialize knowledge base. Please try again.', 'error');
+                    this.updateStatusBadge('error');
+                } finally {
+                    this.initializeBtn.disabled = false;
+                    this.initializeBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Initialize Knowledge Base';
+                }
+            }
+
+            addMessage(content, sender, isError = false) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}-message${isError ? ' error-message' : ''}`;
+                
+                const avatarDiv = document.createElement('div');
+                avatarDiv.className = 'message-avatar';
+                avatarDiv.innerHTML = sender === 'user' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
+                
+                // Format the content with basic markdown-like formatting
+                const formattedContent = this.formatMessage(content);
+                contentDiv.innerHTML = `<p>${formattedContent}</p>`;
+                
+                // Add timestamp
+                const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                contentDiv.innerHTML += `<small class="message-timestamp">${timestamp}</small>`;
+                
+                messageDiv.appendChild(avatarDiv);
+                messageDiv.appendChild(contentDiv);
+                
+                this.chatMessages.appendChild(messageDiv);
+                this.scrollToBottom();
+            }
+
+            formatMessage(content) {
+                // Basic formatting for better readability
+                return content
+                    .replace(/\n/g, '<br>')
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    .replace(/`(.*?)`/g, '<code>$1</code>');
+            }
+
+            scrollToBottom() {
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            }
+
+            setInputState(enabled) {
+                this.messageInput.disabled = !enabled;
+                this.sendButton.disabled = !enabled || !this.messageInput.value.trim();
+                
+                if (enabled) {
+                    this.messageInput.focus();
+                }
+            }
+
+            showLoading(show) {
+                this.loadingOverlay.style.display = show ? 'flex' : 'none';
+            }
+
+            updateStatusBadge(status) {
+                this.statusBadge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+                this.statusBadge.className = `status-badge status-${status}`;
+            }
+
+            showNotification(message, type = 'info') {
+                // Create notification element
+                const notification = document.createElement('div');
+                notification.className = `notification notification-${type}`;
+                notification.innerHTML = `
+                    <div class="notification-content">
+                        <i class="fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i>
+                        <span>${message}</span>
+                    </div>
+                `;
+
+                // Add to DOM
+                document.body.appendChild(notification);
+
+                // Show animation
+                setTimeout(() => notification.classList.add('show'), 100);
+
+                // Auto-remove after 5 seconds
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 300);
+                }, 5000);
+            }
+        }
+
+        // Global functions for onclick handlers
+        function askSuggestedQuestion(question) {
+            if (window.portfolioChatbot) {
+                window.portfolioChatbot.messageInput.value = question;
+                window.portfolioChatbot.sendMessage();
+            }
+        }
+
+        function sendMessage() {
+            if (window.portfolioChatbot) {
+                window.portfolioChatbot.sendMessage();
+            }
+        }
+
+        function initializeKnowledgeBase() {
+            if (window.portfolioChatbot) {
+                window.portfolioChatbot.initializeKnowledgeBase();
+            }
+        }
+
+        // Initialize the chatbot when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            window.portfolioChatbot = new PortfolioChatbot();
+        });
+    </script>
+
+    <!-- Additional CSS for new features -->
+    <style>
+        .headshot-fallback {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-left: 0.5rem;
+        }
+
+        .status-ready { background: #d1fae5; color: #065f46; }
+        .status-active { background: #dbeafe; color: #1e40af; }
+        .status-error { background: #fee2e2; color: #991b1b; }
+        .status-initializing { background: #fef3c7; color: #92400e; }
+
+        .message-timestamp {
+            display: block;
+            margin-top: 0.5rem;
+            color: #6b7280;
+            font-size: 0.75rem;
+        }
+
+        .error-message .message-content {
+            background: #fee2e2;
+            border-left: 4px solid #ef4444;
+        }
+
+        /* Notification styles */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            z-index: 1001;
+            max-width: 400px;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+
+        .notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .notification-content {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 1.25rem;
+        }
+
+        .notification-error {
+            border-left: 4px solid #ef4444;
+            color: #dc2626;
+        }
+
+        .notification-success {
+            border-left: 4px solid #10b981;
+            color: #059669;
+        }
+
+        .notification-info {
+            border-left: 4px solid #3b82f6;
+            color: #2563eb;
+        }
+    </style>
+</body>
+</html>
