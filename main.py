@@ -1,67 +1,65 @@
 import streamlit as st
-from langchain_helper import get_qa_chain, create_vector_db
 import os
+from config import Config
 
-# Page configuration
+# Configure the page
 st.set_page_config(
     page_title="Noah's Portfolio Q&A",
     page_icon="💼",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="wide"
 )
 
-# Title and header
 st.title("Noah's Portfolio Q&A 💼")
-st.markdown("Ask me anything about Noah's professional background, skills, and experience!")
 
-# Sidebar for setup
+# Check if API key is configured
+config = Config()
+if not config.OPENAI_API_KEY:
+    st.error("⚠️ OpenAI API key not configured. Please check your Streamlit secrets.")
+    st.stop()
+
+# Sidebar
 with st.sidebar:
-    st.header("Setup")
-    if st.button("🚀 Initialize Knowledge Base", type="primary"):
-        with st.spinner("Creating knowledge base... This may take a moment."):
+    st.header("Knowledge Base")
+    if st.button("🔄 Create/Update Knowledge Base"):
+        with st.spinner("Creating knowledge base..."):
             try:
+                from langchain_helper import create_vector_db
                 create_vector_db()
                 st.success("✅ Knowledge base created successfully!")
             except Exception as e:
                 st.error(f"❌ Error creating knowledge base: {str(e)}")
-    
-    st.markdown("---")
-    st.markdown("**Sample Questions:**")
-    st.markdown("• What is Noah's educational background?")
-    st.markdown("• Tell me about Noah's sales experience")
-    st.markdown("• What skills does Noah have?")
-    st.markdown("• What certifications does Noah have?")
 
-# Main Q&A interface
-question = st.text_input(
-    "Ask about Noah's professional background:",
-    placeholder="e.g., What is Noah's educational background?"
-)
+    st.markdown("---")
+    st.subheader("Sample Questions:")
+    st.markdown("""
+    - What is Noah's professional background?
+    - What programming languages does Noah know?
+    - Tell me about Noah's work experience
+    - What projects has Noah worked on?
+    """)
+
+# Main interface
+question = st.text_input("Ask about Noah's professional background:", placeholder="Type your question here...")
 
 if question:
     with st.spinner("Thinking..."):
         try:
+            from langchain_helper import get_qa_chain
             chain = get_qa_chain()
             response = chain(question)
             
-            st.header("💡 Answer")
+            st.header("Answer")
             st.write(response["result"])
             
             # Show sources if available
             if "source_documents" in response and response["source_documents"]:
-                with st.expander("📚 View Sources"):
-                    for i, doc in enumerate(response["source_documents"], 1):
-                        st.write(f"**Source {i}:**")
-                        st.write(doc.page_content[:300] + "..." if len(doc.page_content) > 300 else doc.page_content)
-                        st.write("---")
+                with st.expander("📚 Sources"):
+                    for i, doc in enumerate(response["source_documents"]):
+                        st.text(f"Source {i+1}: {doc.page_content[:200]}...")
                         
         except Exception as e:
-            st.error(f"❌ Error: {str(e)}")
-            st.info("💡 Make sure to initialize the knowledge base first using the button in the sidebar.")
-
-# Footer
-st.markdown("---")
-st.markdown("Built with ❤️ using Streamlit and LangChain")
+            st.error(f"❌ Error processing question: {str(e)}")
+            st.info("Please make sure the knowledge base is created and your API key is configured.")
 
 
 
