@@ -11,8 +11,24 @@ load_dotenv()
 class Config:
     """Configuration class for the Portfolio Q&A system."""
     
+    # Try to get from Streamlit secrets first, then environment variables
+    def _get_secret(self, key: str, default: str = "") -> str:
+        """Get secret from Streamlit secrets or environment variables."""
+        try:
+            # Try Streamlit secrets first
+            import streamlit as st
+            if hasattr(st, 'secrets') and key in st.secrets:
+                return st.secrets[key]
+        except:
+            pass
+        # Fall back to environment variables
+        return os.getenv(key, default)
+    
+    @property
+    def OPENAI_API_KEY(self) -> str:
+        return self._get_secret("OPENAI_API_KEY")
+    
     # OpenAI Configuration
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4")
     OPENAI_TEMPERATURE: float = float(os.getenv("OPENAI_TEMPERATURE", "0.1"))
     OPENAI_EMBEDDING_MODEL: str = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-ada-002")
@@ -26,14 +42,14 @@ class Config:
     RETRIEVER_SCORE_THRESHOLD: float = float(os.getenv("RETRIEVER_SCORE_THRESHOLD", "0.7"))
     
     # Validation
-    @classmethod
-    def validate(cls) -> bool:
+    def validate(self) -> bool:
         """Validate that all required configuration is present."""
-        if not cls.OPENAI_API_KEY:
-            raise ValueError("OPENAI_API_KEY environment variable is required")
+        api_key = self.OPENAI_API_KEY
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY is required. Set it in .env file or Streamlit secrets.")
         
-        if not os.path.exists(cls.CSV_FILE_PATH):
-            raise FileNotFoundError(f"CSV file not found: {cls.CSV_FILE_PATH}")
+        if not os.path.exists(self.CSV_FILE_PATH):
+            raise FileNotFoundError(f"CSV file not found: {self.CSV_FILE_PATH}")
         
         return True
 
