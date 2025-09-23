@@ -31,7 +31,8 @@ class Config:
     # OpenAI Configuration
     OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4")
     OPENAI_TEMPERATURE: float = float(os.getenv("OPENAI_TEMPERATURE", "0.1"))
-    OPENAI_EMBEDDING_MODEL: str = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-ada-002")
+    # Default to modern embedding model; override via env/Secrets if needed
+    OPENAI_EMBEDDING_MODEL: str = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
     
     # Data Configuration
     CSV_FILE_PATH: str = os.getenv("CSV_FILE_PATH", "noah_portfolio.csv")

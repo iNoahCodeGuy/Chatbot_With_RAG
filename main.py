@@ -29,6 +29,20 @@ with st.sidebar:
                 st.error(f"Failed to create index: {e}")
 
     st.markdown("---")
+    st.subheader("Diagnostics")
+    st.caption("Quick checks to ensure the environment is configured.")
+    st.write("OpenAI key present:", bool(cfg.OPENAI_API_KEY))
+    st.write("Embedding model:", cfg.OPENAI_EMBEDDING_MODEL)
+    if st.button("▶️ Test embedding call"):
+        try:
+            from langchain_helper import _get_embeddings  # type: ignore
+            emb = _get_embeddings()
+            vec = emb.embed_query("hello world")
+            st.success(f"Embedding ok. Dim: {len(vec)}")
+        except Exception as e:
+            st.error(f"Embedding test failed: {e}")
+
+    st.markdown("---")
     st.subheader("Sample Questions")
     samples: List[str] = [
         "What is Noah's professional background?",

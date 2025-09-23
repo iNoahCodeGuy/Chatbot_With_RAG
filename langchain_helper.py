@@ -33,7 +33,7 @@ def _get_llm() -> ChatOpenAI:
         _llm = ChatOpenAI(
             model=config.OPENAI_MODEL,
             temperature=config.OPENAI_TEMPERATURE,
-            openai_api_key=config.OPENAI_API_KEY,
+            api_key=config.OPENAI_API_KEY,
         )
     return _llm
 
@@ -41,10 +41,13 @@ def _get_embeddings() -> OpenAIEmbeddings:
     global _embeddings
     if _embeddings is None:
         _ensure_config_valid()
-        _embeddings = OpenAIEmbeddings(
-            model=config.OPENAI_EMBEDDING_MODEL,
-            openai_api_key=config.OPENAI_API_KEY,
-        )
+        try:
+            _embeddings = OpenAIEmbeddings(
+                model=config.OPENAI_EMBEDDING_MODEL,
+                api_key=config.OPENAI_API_KEY,
+            )
+        except Exception as e:
+            raise RuntimeError(f"Failed to initialize OpenAI embeddings: {e}")
     return _embeddings
 
 # Path where the vector database will be saved
@@ -70,7 +73,9 @@ def create_vector_db():
         embedding=_get_embeddings(),  # Uses OpenAI embeddings to create embeddings
     )
 
-    # Save the vector database locally for quick access
+    # Ensure the directory exists then save the vector database locally for quick access
+    import os
+    os.makedirs(vectordb_file_path, exist_ok=True)
     vectordb.save_local(vectordb_file_path)
 
 
