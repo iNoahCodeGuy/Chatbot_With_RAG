@@ -1,121 +1,69 @@
 
-# Noah's Portfolio Q&A: AI-Powered Professional Background Chatbot
+% Noah's Portfolio Q&A (Streamlit)
 
-This is an end-to-end LLM project based on OpenAI GPT-4 and Langchain. It's a Q&A system for Noah's professional portfolio that provides instant answers about his background, skills, experience, and qualifications. Built with modern AI technologies and a professional web interface to showcase technical abilities while providing comprehensive information about Noah's professional journey.
+An AI-powered Q&A over Noah’s professional portfolio using LangChain, OpenAI, and FAISS. The Streamlit app supports secrets-based configuration, easy index refresh, and a polished UI with optional headshot.
 
-## Project Highlights
+## Quick start (local)
 
-- **Professional Web Interface**: Modern, responsive design with Noah's headshot and professional branding
-- Uses Noah's professional portfolio data in CSV format containing career highlights and experience  
-- AI-powered chatbot that can answer questions about Noah's background instantly
-- Built with OpenAI GPT-4 for high-quality, contextual responses
-- Vector database for semantic search through professional experience
-- Flask web application with real-time chat functionality
-
-## Features
-- **Professional Portfolio Website**: Showcases Noah's photo, background, and key qualifications
-- **Real-time AI Chat**: Interactive chatbot with suggested questions and professional responses
-- **Semantic Search**: Finds relevant information even with varied question phrasing  
-- **Instant Responses**: Get comprehensive answers about Noah's background in seconds
-- **Modern Tech Stack**: Showcases proficiency with cutting-edge AI and web technologies
-- **Responsive Design**: Works perfectly on desktop and mobile devices
-
-## Technologies Used
-- **Flask**: Modern Python web framework
-- **LangChain + OpenAI GPT-4**: LLM-based Q&A system
-- **HTML5/CSS3/JavaScript**: Frontend user interface
-- **OpenAI Embeddings**: Text embeddings for semantic search
-- **FAISS**: Vector database for efficient similarity search
-- **Python**: Backend development
-
-## Installation
-
-1. Clone this repository to your local machine using:
-
-```bash
-git clone https://github.com/iNoahCodeGuy/Chatbot_With_RAG.git
-```
-
-2. Navigate to the project directory:
-
-```bash
-cd Chatbot_With_RAG
-```
-
-3. Install the required dependencies using pip:
-
+1. Install deps
 ```bash
 pip install -r requirements.txt
 ```
 
-4. Acquire an OpenAI API key and put it in .env file:
-
+2. Set your OpenAI key (either .env or environment)
 ```bash
-OPENAI_API_KEY="your_openai_api_key_here"
+OPENAI_API_KEY=sk-...  # put this in a .env file or your shell env
 ```
 
-## Usage
-
-1. Run the Flask web application by executing:
-
+3. Run the app
 ```bash
-python app.py
+streamlit run main.py
 ```
 
-2. Open your web browser and navigate to: `http://localhost:5000`
+4. In the sidebar, click “Create / Refresh Index” once. Then ask a question.
 
-3. You'll see Noah's professional portfolio website with:
-   - Professional headshot and background information
-   - Interactive AI chatbot interface
-   - Suggested questions to get started
+## Deploy on Streamlit Cloud
 
-4. To create the knowledge base from Noah's portfolio data, click on "Initialize Knowledge Base" button. It will take some time to process the data so please wait.
+- App file: `3_project_codebasics_q_and_a/main.py`
+- Secrets: set `OPENAI_API_KEY` (and optionally `HEADSHOT_URL`, `HEADSHOT_NAME`)
+- The app auto-builds the FAISS index on first query if missing.
 
-5. Once the knowledge base is created, you will see a directory called `faiss_index` in your current folder.
+## Configuration
 
-6. Now you are ready to ask questions about Noah's professional background. Type your question and hit Enter or click the send button.
+- `OPENAI_MODEL` (default: gpt-4)
+- `OPENAI_TEMPERATURE` (default: 0.1)
+- `OPENAI_EMBEDDING_MODEL` (default: text-embedding-3-small)
+- `CSV_FILE_PATH` (default: noah_portfolio.csv)
+- `SOURCE_COLUMN` (default: answer)
+- `VECTOR_DB_PATH` (default: faiss_index)
+- `RETRIEVER_SCORE_THRESHOLD` (default: 0.7)
 
-## Sample Questions
+All values can be set via env or Streamlit Secrets. Secrets take precedence.
 
-- What is Noah's professional background?
-- Tell me about Noah's sales experience
-- What education does Noah have?
-- What certifications does Noah hold?
-- What skills does Noah possess?
-- Can you describe Noah's B2B sales experience?
-- How would you describe Noah as a candidate for a sales position?
+## Headshot options
 
-## Project Structure
+Choose any one of:
+- Upload in the sidebar (session-only preview)
+- Set `HEADSHOT_URL` in Streamlit Secrets (preferred for Cloud)
+- Add a local file under `static/noah-headshot.jpg` (or .png/.jpeg)
 
-- `app.py` - Flask web application and API endpoints
-- `templates/index.html` - Professional portfolio website template
-- `static/styles.css` - Modern responsive CSS styling
-- `static/script.js` - Interactive JavaScript for chat functionality
-- `static/noah-headshot.jpg` - Professional headshot image (add your photo here)
-- `noah_portfolio.csv` - Contains Noah's professional information and background
-- `langchain_helper.py` - Core Q&A functionality with OpenAI integration
-- `config.py` - Configuration management
-- `.env` - Environment variables (API keys)
-- `requirements.txt` - Python dependencies
+Optional: `HEADSHOT_NAME` in Secrets sets the caption.
 
-## Adding Your Headshot
+## Troubleshooting
 
-To personalize the website with your professional headshot:
+- “OpenAI key present: False” → Set `OPENAI_API_KEY` in Secrets or env.
+- Embedding errors → use default `text-embedding-3-small`; verify key with “Test embedding call”.
+- FAISS read error → build once via “Create / Refresh Index” or ask a question to auto-build.
 
-1. Add your professional photo to the `static/` directory
-2. Name it `noah-headshot.jpg` (or update the HTML template to match your filename)
-3. Recommended specifications:
-   - Size: 400x400 pixels minimum
-   - Format: JPG or PNG
-   - Professional business attire
-   - Clean background
-   - High resolution for crisp display
+## Structure
 
-If no image is provided, the website will display a professional placeholder with your initial.
+- `main.py` — Streamlit UI, diagnostics, cached QA chain
+- `langchain_helper.py` — FAISS build/load and RetrievalQA chain creation
+- `config.py` — Read config from Secrets/env with validation
+- `requirements.txt` — dependencies
+- `noah_portfolio.csv` — source data
+- `faiss_index/` — persisted vector store (created at runtime)
 
-## Project Structure
+## Note on legacy Flask files
 
-- main.py: The main Streamlit application script.
-- langchain_helper.py: This has all the langchain code
-- requirements.txt: A list of required Python packages for the project.
-- .env: Configuration file for storing your Google API key.
+There are legacy Flask files (`app.py`, templates/, static/js/css). The active app is Streamlit (`main.py`). You can ignore or remove Flask files if you don’t need them.
