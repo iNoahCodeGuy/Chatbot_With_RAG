@@ -53,6 +53,14 @@ def _get_embeddings() -> OpenAIEmbeddings:
 # Path where the vector database will be saved
 vectordb_file_path = config.VECTOR_DB_PATH
 
+def vector_db_exists() -> bool:
+    """Check if the FAISS index files exist on disk."""
+    import os
+    idx_dir = vectordb_file_path
+    faiss_path = os.path.join(idx_dir, "index.faiss")
+    pkl_path = os.path.join(idx_dir, "index.pkl")
+    return os.path.exists(faiss_path) and os.path.exists(pkl_path)
+
 def create_vector_db():
     """
     Creates a vector database from Noah's professional portfolio data.

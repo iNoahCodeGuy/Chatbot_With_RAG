@@ -33,6 +33,11 @@ with st.sidebar:
     st.caption("Quick checks to ensure the environment is configured.")
     st.write("OpenAI key present:", bool(cfg.OPENAI_API_KEY))
     st.write("Embedding model:", cfg.OPENAI_EMBEDDING_MODEL)
+    try:
+        from langchain_helper import vector_db_exists
+        st.write("FAISS index present:", vector_db_exists())
+    except Exception:
+        st.write("FAISS index present:", False)
     if st.button("▶️ Test embedding call"):
         try:
             from langchain_helper import _get_embeddings  # type: ignore
@@ -64,7 +69,11 @@ q = st.text_input(
 if q:
     with st.spinner("Thinking..."):
         try:
-            from langchain_helper import get_qa_chain
+            from langchain_helper import get_qa_chain, vector_db_exists, create_vector_db
+            # Auto-build index on first use
+            if not vector_db_exists():
+                with st.spinner("Index not found. Building now (one-time)..."):
+                    create_vector_db()
             chain = get_qa_chain()
             result = chain({"query": q})
 

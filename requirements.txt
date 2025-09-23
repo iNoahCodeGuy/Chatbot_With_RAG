@@ -19,3 +19,6 @@ tiktoken>=0.5.0
 
 # Compatibility
 protobuf>=4.0.0
+
+# Data processing
+pandas>=2.0.0
