@@ -1,4 +1,5 @@
 import streamlit as st
+import os
 from typing import List
 from config import Config
 
@@ -17,6 +18,43 @@ if not cfg.OPENAI_API_KEY:
     st.stop()
 
 with st.sidebar:
+    # --- Headshot section ---
+    def _local_headshot_path() -> str | None:
+        base_dir = os.path.dirname(__file__)
+        for fname in ("noah-headshot.jpg", "noah-headshot.png", "noah-headshot.jpeg"):
+            p = os.path.join(base_dir, "static", fname)
+            if os.path.exists(p):
+                return p
+        return None
+
+    display_name = "Noah"
+    try:
+        # Optional secret to override displayed name
+        if hasattr(st, "secrets"):
+            display_name = st.secrets.get("HEADSHOT_NAME", display_name)
+    except Exception:
+        pass
+
+    uploaded = st.file_uploader("Upload headshot (preview only)", type=["png", "jpg", "jpeg"], key="headshot_upload")
+    if uploaded is not None:
+        st.image(uploaded, width=180, caption=display_name)
+    else:
+        # Try URL from secrets first
+        url = None
+        try:
+            if hasattr(st, "secrets"):
+                url = st.secrets.get("HEADSHOT_URL")
+        except Exception:
+            url = None
+        if url:
+            st.image(url, width=180, caption=display_name)
+        else:
+            local_path = _local_headshot_path()
+            if local_path:
+                st.image(local_path, width=180, caption=display_name)
+            else:
+                st.caption("Tip: add a headshot at static/noah-headshot.jpg (or .png/.jpeg) or set HEADSHOT_URL in Streamlit Secrets.")
+
     st.header("Knowledge Base")
     st.caption("Create or refresh the FAISS index from the portfolio CSV.")
     if st.button("🔄 Create / Refresh Index"):
