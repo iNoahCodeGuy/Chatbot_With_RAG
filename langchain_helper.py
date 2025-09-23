@@ -1,3 +1,12 @@
+"""LangChain helper utilities with lazy initialization.
+
+This module avoids heavy work at import time so Streamlit Cloud can start the
+app even if secrets or files are missing. We initialize models and stores only
+when the public functions are called, and raise informative errors.
+"""
+
+from typing import Optional
+
 # Import required LangChain components
 from langchain_community.vectorstores import FAISS  # Vector database for storing and searching embeddings
 from langchain_openai import ChatOpenAI  # OpenAI's chat model interface
@@ -7,20 +16,36 @@ from langchain.prompts import PromptTemplate  # For creating custom prompt templ
 from langchain.chains import RetrievalQA  # For building Q&A chain
 from config import config  # Import centralized configuration
 
-# Validate configuration on import
-config.validate()
+_llm: Optional[ChatOpenAI] = None
+_embeddings: Optional[OpenAIEmbeddings] = None
 
-# Initialize the language model using configuration
-llm = ChatOpenAI(
-    model=config.OPENAI_MODEL,
-    temperature=config.OPENAI_TEMPERATURE,
-    openai_api_key=config.OPENAI_API_KEY
-)
-# # Initialize embeddings model using configuration
-openai_embeddings = OpenAIEmbeddings(
-    model=config.OPENAI_EMBEDDING_MODEL,
-    openai_api_key=config.OPENAI_API_KEY
-)
+def _ensure_config_valid() -> None:
+    """Validate configuration lazily with clearer error messages."""
+    try:
+        config.validate()
+    except Exception as e:
+        raise RuntimeError(f"Configuration error: {e}")
+
+def _get_llm() -> ChatOpenAI:
+    global _llm
+    if _llm is None:
+        _ensure_config_valid()
+        _llm = ChatOpenAI(
+            model=config.OPENAI_MODEL,
+            temperature=config.OPENAI_TEMPERATURE,
+            openai_api_key=config.OPENAI_API_KEY,
+        )
+    return _llm
+
+def _get_embeddings() -> OpenAIEmbeddings:
+    global _embeddings
+    if _embeddings is None:
+        _ensure_config_valid()
+        _embeddings = OpenAIEmbeddings(
+            model=config.OPENAI_EMBEDDING_MODEL,
+            openai_api_key=config.OPENAI_API_KEY,
+        )
+    return _embeddings
 
 # Path where the vector database will be saved
 vectordb_file_path = config.VECTOR_DB_PATH
@@ -30,17 +55,19 @@ def create_vector_db():
     Creates a vector database from Noah's professional portfolio data.
     Loads the portfolio CSV file and converts it into searchable embeddings.
     """
+    _ensure_config_valid()
+
     # Load Noah's professional portfolio data using configuration
     loader = CSVLoader(
         file_path=config.CSV_FILE_PATH,
-        source_column=config.SOURCE_COLUMN
+        source_column=config.SOURCE_COLUMN,
     )
     data = loader.load()
 
     # Convert portfolio data into vectors for semantic search
     vectordb = FAISS.from_documents(
         documents=data,
-        embedding=openai_embeddings  # Uses OpenAI embeddings to create embeddings
+        embedding=_get_embeddings(),  # Uses OpenAI embeddings to create embeddings
     )
 
     # Save the vector database locally for quick access
@@ -55,7 +82,11 @@ def get_qa_chain():
     3. Uses a custom prompt to format responses professionally about Noah's background
     """
     # Load the vector database from the local folder
-    vectordb = FAISS.load_local(vectordb_file_path, openai_embeddings, allow_dangerous_deserialization=True)
+    vectordb = FAISS.load_local(
+        vectordb_file_path,
+        _get_embeddings(),
+        allow_dangerous_deserialization=True,
+    )
 
     # Create a retriever for querying the vector database using configuration
     retriever = vectordb.as_retriever(score_threshold=config.RETRIEVER_SCORE_THRESHOLD)
@@ -89,7 +120,7 @@ def get_qa_chain():
     # - Retrieves relevant context from Noah's portfolio
     # - Returns source documents for transparency
     chain = RetrievalQA.from_chain_type(
-        llm=llm,
+        llm=_get_llm(),
         chain_type="stuff",
         retriever=retriever,
         input_key="query",
@@ -100,6 +131,7 @@ def get_qa_chain():
     return chain
 
 if __name__ == "__main__":
+    # Simple manual smoke test
     create_vector_db()
     chain = get_qa_chain()
     print(chain("Tell me about Noah's sales experience"))

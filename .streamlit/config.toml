@@ -1,3 +1,5 @@
 [server]
 headless = true
-port = 8502
+
+# Note: Do NOT set a custom port on Streamlit Cloud. It must run on 8501.
+# If you need a local custom port, set it via command line only (e.g., `streamlit run main.py --server.port 8502`).
