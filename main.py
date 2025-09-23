@@ -17,6 +17,12 @@ if not cfg.OPENAI_API_KEY:
     st.error("OpenAI API key is missing. Add it in Streamlit Secrets as OPENAI_API_KEY.")
     st.stop()
 
+@st.cache_resource(show_spinner=False)
+def _get_cached_chain():
+    """Cache the RetrievalQA chain across reruns for responsiveness."""
+    from langchain_helper import get_qa_chain
+    return get_qa_chain()
+
 with st.sidebar:
     # --- Headshot section ---
     def _local_headshot_path() -> str | None:
@@ -62,6 +68,8 @@ with st.sidebar:
             try:
                 from langchain_helper import create_vector_db
                 create_vector_db()
+                # Clear cached chain so it reloads the updated index
+                _get_cached_chain.clear()
                 st.success("Index created successfully.")
             except Exception as e:
                 st.error(f"Failed to create index: {e}")
@@ -107,12 +115,12 @@ q = st.text_input(
 if q:
     with st.spinner("Thinking..."):
         try:
-            from langchain_helper import get_qa_chain, vector_db_exists, create_vector_db
+            from langchain_helper import vector_db_exists, create_vector_db
             # Auto-build index on first use
             if not vector_db_exists():
                 with st.spinner("Index not found. Building now (one-time)..."):
                     create_vector_db()
-            chain = get_qa_chain()
+            chain = _get_cached_chain()
             result = chain({"query": q})
 
             st.subheader("Answer")

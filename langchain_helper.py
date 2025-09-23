@@ -1,8 +1,10 @@
 """LangChain helper utilities with lazy initialization.
 
-This module avoids heavy work at import time so Streamlit Cloud can start the
-app even if secrets or files are missing. We initialize models and stores only
-when the public functions are called, and raise informative errors.
+Purpose
+-------
+Avoid heavy work at import time so the Streamlit app can start even if secrets
+or files are missing. Initialize models and stores only when the public
+functions are called, and raise informative errors.
 """
 
 from typing import Optional
@@ -54,17 +56,18 @@ def _get_embeddings() -> OpenAIEmbeddings:
 vectordb_file_path = config.VECTOR_DB_PATH
 
 def vector_db_exists() -> bool:
-    """Check if the FAISS index files exist on disk."""
+    """Return True if the FAISS index files exist on disk."""
     import os
     idx_dir = vectordb_file_path
     faiss_path = os.path.join(idx_dir, "index.faiss")
     pkl_path = os.path.join(idx_dir, "index.pkl")
     return os.path.exists(faiss_path) and os.path.exists(pkl_path)
 
-def create_vector_db():
-    """
-    Creates a vector database from Noah's professional portfolio data.
-    Loads the portfolio CSV file and converts it into searchable embeddings.
+def create_vector_db() -> None:
+    """Build and persist the FAISS index from the portfolio CSV.
+
+    Reads the CSV configured in :class:`config`, embeds the configured column,
+    and persists the FAISS index under :data:`vectordb_file_path`.
     """
     _ensure_config_valid()
 
@@ -87,13 +90,24 @@ def create_vector_db():
     vectordb.save_local(vectordb_file_path)
 
 
-def get_qa_chain():
-    """
-    Creates a question-answering chain that:
-    1. Loads the pre-created vector database
-    2. Sets up a retriever to find relevant portfolio information
-    3. Uses a custom prompt to format responses professionally about Noah's background
-    """
+def _build_prompt() -> PromptTemplate:
+    """Return the prompt template for professional, context-grounded answers."""
+    prompt_template = (
+        "Given the following context about Noah's professional background and a question,\n"
+        "provide a concise, professional response highlighting relevant skills, achievements, and experiences.\n\n"
+        "Guidelines:\n"
+        "- Be specific and pull concrete details from the context when available\n"
+        "- Maintain a professional, interview-appropriate tone\n"
+        "- If information is not in the context, acknowledge the limitation briefly\n\n"
+        "CONTEXT: {context}\n\n"
+        "QUESTION: {question}\n\n"
+        "RESPONSE:"
+    )
+    return PromptTemplate(template=prompt_template, input_variables=["context", "question"])
+
+
+def get_qa_chain() -> RetrievalQA:
+    """Create and return the RetrievalQA chain using the persisted FAISS index."""
     # Load the vector database from the local folder
     vectordb = FAISS.load_local(
         vectordb_file_path,
@@ -103,30 +117,7 @@ def get_qa_chain():
 
     # Create a retriever for querying the vector database using configuration
     retriever = vectordb.as_retriever(score_threshold=config.RETRIEVER_SCORE_THRESHOLD)
-
-    # Define how the AI should respond to questions about Noah
-    # - Encourages professional, detailed responses
-    # - Maintains accuracy by sticking to provided context
-    prompt_template = """Given the following context about Noah's professional background and a question, 
-    provide a detailed, professional response. Focus on highlighting relevant skills, achievements, and experiences.
-
-    Guidelines:
-    - Be specific and provide concrete examples from the context
-    - Highlight relevant technical skills and achievements
-    - Maintain a professional, interview-appropriate tone
-    - If information is not in the context, politely acknowledge the limitation
-
-    CONTEXT: {context}
-
-    QUESTION: {question}
-
-    PROFESSIONAL RESPONSE:"""
-
-    # Create the prompt template with our variables
-    PROMPT = PromptTemplate(
-        template=prompt_template,
-        input_variables=["context", "question"]
-    )
+    PROMPT = _build_prompt()
 
     # Build the QA chain
     # - Uses the language model for generating responses
