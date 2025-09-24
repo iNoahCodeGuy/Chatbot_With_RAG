@@ -96,20 +96,22 @@ with st.sidebar:
     st.markdown("---")
     st.subheader("Sample Questions")
     samples: List[str] = [
-        "What is Noah's professional background?",
-        "List Noah's top technical skills.",
-        "Tell me about Noah's work experience.",
-        "What projects has Noah delivered?",
+        "Explain the RAG architecture behind this chatbot",
+        "Show me Noah's MMA career highlights",
+        "Why did Noah transition from sales to AI?",
+        "What's Noah's 3-year career vision?",
+        "How does the LangChain + FAISS stack work?",
+        "What makes Noah different from other candidates?",
     ]
     for s in samples:
         if st.button(s, key=f"sample-{s[:10]}"):
             st.session_state["last_question"] = s
 
-st.markdown("Write a question about Noah's background, skills, or projects.")
+st.markdown("Ask about Noah's background, the tech stack behind this project, or explore his unique career journey.")
 q = st.text_input(
     "Your question:",
     value=st.session_state.get("last_question", ""),
-    placeholder="e.g., What programming languages does Noah know?",
+    placeholder="e.g., How is this RAG system architected? or Tell me about Noah's MMA title fight.",
 )
 
 if q:
