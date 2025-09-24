@@ -35,8 +35,9 @@ class Config:
     OPENAI_EMBEDDING_MODEL: str = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
     
     # Data Configuration
-    CSV_FILE_PATH: str = os.getenv("CSV_FILE_PATH", "noah_portfolio.csv")
-    SOURCE_COLUMN: str = os.getenv("SOURCE_COLUMN", "answer")
+    # Updated to the consolidated structured knowledge base
+    CSV_FILE_PATH: str = os.getenv("CSV_FILE_PATH", "noah_chatbot_kb_master.csv")
+    SOURCE_COLUMN: str = "Answer"  # (Not directly used now but kept for reference)
     
     # Vector Database Configuration
     VECTOR_DB_PATH: str = os.getenv("VECTOR_DB_PATH", "faiss_index")

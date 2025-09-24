@@ -17,6 +17,9 @@ from langchain_openai import OpenAIEmbeddings  # For creating text embeddings
 from langchain.prompts import PromptTemplate  # For creating custom prompt templates
 from langchain.chains import RetrievalQA  # For building Q&A chain
 from config import config  # Import centralized configuration
+from langchain.schema import Document
+import os
+import csv
 
 _llm: Optional[ChatOpenAI] = None
 _embeddings: Optional[OpenAIEmbeddings] = None
@@ -63,29 +66,61 @@ def vector_db_exists() -> bool:
     pkl_path = os.path.join(idx_dir, "index.pkl")
     return os.path.exists(faiss_path) and os.path.exists(pkl_path)
 
-def create_vector_db() -> None:
-    """Build and persist the FAISS index from the portfolio CSV.
+def _load_kb_documents(csv_path: str) -> list[Document]:
+    """Load structured knowledge base CSV rows into LangChain Document objects.
 
-    Reads the CSV configured in :class:`config`, embeds the configured column,
-    and persists the FAISS index under :data:`vectordb_file_path`.
+    Each document page_content combines category, question, answer, and keywords
+    to improve semantic recall. Metadata retains individual fields.
     """
+    if not os.path.exists(csv_path):
+        raise FileNotFoundError(f"Knowledge base CSV not found: {csv_path}")
+
+    docs: list[Document] = []
+    with open(csv_path, newline='', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        required = {"Category", "Question", "Answer"}
+        missing = required - set(reader.fieldnames or [])
+        if missing:
+            raise ValueError(f"CSV missing required columns: {missing}")
+
+        for row in reader:
+            category = row.get("Category", "").strip()
+            question = row.get("Question", "").strip()
+            answer = row.get("Answer", "").strip()
+            keywords = row.get("Keywords", "").strip()
+
+            # Construct a unified textual body for stronger embedding signal.
+            body = (
+                f"Category: {category}\n"
+                f"Question: {question}\n"
+                f"Answer: {answer}\n"
+                f"Keywords: {keywords}"
+            )
+
+            docs.append(
+                Document(
+                    page_content=body,
+                    metadata={
+                        "category": category,
+                        "question": question,
+                        "keywords": keywords,
+                        "source": os.path.basename(csv_path),
+                    },
+                )
+            )
+    return docs
+
+def create_vector_db() -> None:
+    """Build and persist the FAISS index from the new structured KB CSV."""
     _ensure_config_valid()
 
-    # Load Noah's professional portfolio data using configuration
-    loader = CSVLoader(
-        file_path=config.CSV_FILE_PATH,
-        source_column=config.SOURCE_COLUMN,
-    )
-    data = loader.load()
+    docs = _load_kb_documents(config.CSV_FILE_PATH)
 
-    # Convert portfolio data into vectors for semantic search
     vectordb = FAISS.from_documents(
-        documents=data,
-        embedding=_get_embeddings(),  # Uses OpenAI embeddings to create embeddings
+        documents=docs,
+        embedding=_get_embeddings(),
     )
 
-    # Ensure the directory exists then save the vector database locally for quick access
-    import os
     os.makedirs(vectordb_file_path, exist_ok=True)
     vectordb.save_local(vectordb_file_path)
 
