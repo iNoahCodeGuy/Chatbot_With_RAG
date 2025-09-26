@@ -188,4 +188,4 @@ if __name__ == "__main__":
     # Simple manual smoke test
     create_vector_db()
     chain = get_qa_chain()
-    print(chain("Tell me about Noah's sales experience"))
+    print(chain.invoke({"query": "Tell me about Noah's sales experience"}))  # Updated to use invoke()

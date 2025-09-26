@@ -182,7 +182,7 @@ if q:
             start_time = time.time()
             chain = _get_cached_chain()
             analytics = _get_cached_analytics()
-            result = chain({"query": q})
+            result = chain.invoke({"query": q})  # Updated to use invoke() instead of deprecated __call__
             response_time_ms = (time.time() - start_time) * 1000
             
             answer = result.get("result", "No answer returned.")
