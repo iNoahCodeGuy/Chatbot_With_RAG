@@ -72,10 +72,9 @@ class Config:
         """Optional LinkedIn URL for UI surfacing when relevant."""
         return self._get_secret("LINKEDIN_URL", os.getenv("LINKEDIN_URL", ""))
     
-    # Vector Database Configuration
-    VECTOR_DB_BACKEND: str = os.getenv("VECTOR_DB_BACKEND", "faiss")  # options: 'faiss', 'chroma'
-    VECTOR_DB_PATH: str = os.getenv("VECTOR_DB_PATH", "faiss_index")
-    CHROMA_DB_PATH: str = os.getenv("CHROMA_DB_PATH", "chroma_index")
+    # Vector Database Configuration (FAISS default)
+    VECTOR_DB_BACKEND: str = os.getenv("VECTOR_DB_BACKEND", "faiss")  # only 'faiss' supported now
+    VECTOR_DB_PATH: str = os.getenv("VECTOR_DB_PATH", "faiss_index")  # directory for faiss index files
     RETRIEVER_SCORE_THRESHOLD: float = float(os.getenv("RETRIEVER_SCORE_THRESHOLD", "0.7"))
     
     # Validation

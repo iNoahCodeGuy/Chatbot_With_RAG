@@ -1,44 +1,55 @@
 # Streamlit Cloud Deployment Fix Summary
 
-## Current Target State (Modern Stack)
-We are standardizing on Python 3.13 (Streamlit Cloud default) with the modern LangChain 0.3.x API (invoke pattern) and FAISS 1.12.0 (Python 3.13 wheels available). `runtime.txt` was removed because Streamlit ignores it for Python pinning and defaults to latest supported minor anyway. If FAISS wheel issues occur transiently, fallback to Chroma (`VECTOR_DB_BACKEND=chroma`).
+## Current Target State (Option A - Chroma Only)
+We standardized on Python 3.13 (Streamlit Cloud default) with the modern LangChain 0.3.x API (invoke pattern) and a **Chroma-only** vector store backend (FAISS fully removed to eliminate wheel / build variability). `runtime.txt` remains absent (Streamlit ignores it). The codebase and dependencies no longer reference FAISS; reliability > theoretical marginal speed.
 
 ## Original Issue (Historical)
-Streamlit Cloud deployment was failing with inconsistent behavior - sometimes successfully installing updated dependencies (`faiss-cpu==1.12.0`), other times reverting to old incompatible versions (`faiss-cpu==1.8.0.post1`), indicating a cached/legacy requirements state or branch mismatch.
+Deployment instability was rooted in version drift (`faiss-cpu==1.8.0.post1` vs modern), missing packages (`langchain-openai`) and cached builds. These conditions are now structurally eliminated by:
+- Removing FAISS dependency entirely
+- Pinning a minimal, Python 3.13–verified requirements set
+- Refactoring to a single, explicit vector backend (Chroma)
 
-## Root Cause Hypotheses
-1. Stale build cache referencing an earlier commit containing downgraded requirements.
-2. Possible secondary requirements file during earlier iterations (now removed).
-3. Transient PyPI / wheel resolution timing causing fallback attempts.
-4. Branch / repository path mismatch in Streamlit app settings (case sensitivity in folder name `Chatbot_With_RAG-1`).
+## Root Cause (Historical) Summary
+1. Stale build cache + previous requirements revisions
+2. Legacy FAISS version fallback due to wheel resolution timing
+3. Missing `langchain-openai` caused runtime import errors
+4. Multi-backend complexity increased failure surface area
 
 ## Resolved Actions
-- Ensured only one root-level `requirements.txt` (updated with cache-bust comment).
-- Removed `runtime.txt` to avoid misleading Python pin intent.
-- Confirmed modern code uses `chain.invoke()`; no legacy `.call()` / direct chain invocation remains.
-- Added explicit cache-busting comment line to `requirements.txt`.
-- Added FAISS→Chroma fallback logic (runtime) in `langchain_helper.py`.
+- Simplified `langchain_helper.py` to Chroma-only
+- Removed all FAISS imports / conditional logic
+- Updated `requirements.txt` (added `chromadb`, removed `faiss-cpu`)
+- Set default `VECTOR_DB_BACKEND=chroma` in `config.py`
+- Updated environment status component (no FAISS messaging)
+- Added reliability-focused documentation (this file + Quick Start TBD)
 
-## Next Deployment Steps
-1. In Streamlit Cloud dashboard: confirm the repository + branch point to this folder (case-sensitive path).
-2. Trigger a fresh deploy (a trivial commit already added a cache-busting comment).
-3. Watch logs: you should see `faiss-cpu==1.12.0` install. If failure: set a secret `VECTOR_DB_BACKEND="chroma"` and redeploy.
-4. First run will build the FAISS index (or Chroma) from `noah_portfolio.csv`.
-5. Ask a couple of questions, then verify Popular Questions populate.
+## Deployment Steps (Fresh or Rebuild)
+1. Push / commit any change (forces Streamlit rebuild)
+2. Streamlit Cloud auto-installs minimal dependencies (watch logs for `chromadb` install)
+3. First user question triggers Chroma index build from `noah_portfolio.csv`
+4. Ask a few questions → verify Popular Questions populate (analytics DB appears)
+5. Use Diagnostics sidebar to run Embedding Test if needed
 
-## Rollback (Not Recommended Now)
-If you must revert temporarily to Python 3.11-era stack, you would reintroduce a `runtime.txt` specifying 3.11 and pin: `faiss-cpu==1.8.0`, `langchain==0.2.11` and revert invoke usage. This is documented only for historical traceability—current codebase expects modern versions.
-
-## Health Check Recommendation
-Add (optional) lightweight `/health` style script or a small `health_check.py` to import config, verify OpenAI key presence, and attempt an embeddings ping.
+## Health Check Script
+Optional `health_check.py` (added if requested) can be run locally:
+```
+python health_check.py
+```
+It validates: OpenAI key presence, CSV load, embeddings init, Chroma create/load.
 
 ## Monitoring
-Use the sidebar Diagnostics section (embedding test + index status). Analytics DB (`chatbot_analytics.db`) will appear after first logged interaction.
+- Sidebar → Analytics + Diagnostics
+- `chatbot_analytics.db` created after first logged interaction
+- Use Export button to snapshot usage
 
-## Known Optional Enhancements
-- Implement context length safeguard & truncation.
-- Add exponential backoff wrapper for OpenAI rate limits.
-- Provide CONTRIBUTING.md / QUICK_START.md for juniors.
+## Optional Enhancements (Still Open)
+- Add CONTRIBUTING.md (guidelines for PRs)
+- Context window guardrails (initial truncation now added in `main.py`)
+- Retry / backoff wrapper (implemented) can be extended with jitter + logging
+- Token-based dynamic context compression (future)
+
+## Rollback (Not Recommended)
+Reintroducing FAISS would require: adding `faiss-cpu` back to requirements, restoring multi-backend logic, and adjusting docs. Not advised unless a benchmark justifies complexity.
 
 ---
-Last Updated: 2025-09-26
+Last Updated: 2025-09-26 (Option A stabilization complete)

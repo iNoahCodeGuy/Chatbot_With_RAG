@@ -1,29 +1,27 @@
-# Production-Ready Deployment Summary
+# Production-Ready Deployment Summary (Option A - Chroma Only)
 
 ## 🎯 Issue Resolution
-
-**Problem:** Streamlit Cloud deployment failing due to Python 3.13 compatibility issues and deprecated LangChain API usage.
-
-**Solution:** Complete production-ready refactor with enterprise-grade code quality.
+**Problem:** Deployment instability (FAISS wheel variance, missing `langchain-openai`, outdated patterns).
+**Solution:** Simplified, reliable Chroma-only architecture with modern LangChain 0.3.x invoke usage.
 
 ---
 
 ## ✅ Key Improvements
 
 ### 1. **Dependency Management**
-- Fixed Python 3.13 compatibility by using latest stable versions
-- Updated `requirements.txt` with proven production packages:
-  ```
-  langchain==0.3.27
-  langchain-openai==0.3.33  
-  langchain-community==0.3.29
-  streamlit==1.50.0
-  python-dotenv==1.1.1
-  faiss-cpu==1.12.0
-  tiktoken==0.11.0
-  protobuf==4.25.3
-  pandas==2.2.2
-  ```
+Current pinned stack:
+```
+langchain==0.3.27
+langchain-openai==0.3.33
+langchain-community==0.3.29
+chromadb==0.5.3
+streamlit==1.50.0
+python-dotenv==1.1.1
+tiktoken==0.11.0
+protobuf==4.25.3
+pandas==2.2.2
+```
+Removed: `faiss-cpu` (eliminates build risk on Python 3.13).
 
 ### 2. **Senior-Level Code Architecture** 🏗️
 
@@ -37,7 +35,7 @@
 #### **langchain_helper.py Enhancement**
 - **Production Documentation**: Comprehensive docstrings and type hints throughout
 - **Lazy Initialization**: Thread-safe singleton patterns for optimal performance
-- **Multi-Backend Support**: FAISS primary with Chroma fallback for maximum compatibility
+- **Chroma-only Backend**: Simplified architecture with Chroma as the primary backend
 - **Professional Prompts**: Enterprise-grade prompt engineering with LinkedIn integration
 - **Comprehensive Testing**: Built-in validation system for development workflows
 
@@ -86,10 +84,11 @@
 ### **Core Files Structure**
 ```
 ├── main.py                 # 🎯 Production Streamlit application
-├── langchain_helper.py     # 🔧 Enterprise RAG utilities
+├── langchain_helper.py     # 🔧 Enterprise RAG utilities (Chroma)
 ├── analytics.py           # 📊 SQLite-based tracking system
 ├── config.py              # ⚙️ Configuration management
 ├── noah_portfolio.csv     # 📋 Knowledge base (36+ Q&A pairs)
+├── health_check.py        # 🩺 Pre-deploy validation
 ├── requirements.txt       # 📦 Production dependencies
 └── quick_test.py          # 🧪 Development validation
 ```

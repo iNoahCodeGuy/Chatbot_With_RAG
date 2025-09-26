@@ -115,14 +115,14 @@ def render_privacy_section() -> None:
 def render_knowledge_base_section() -> None:
     """Render knowledge base management controls."""
     st.header("Knowledge Base")
-    st.caption("Manage the vector database that powers intelligent responses.")
-    if st.button("🔄 Rebuild Index", help="Refresh the vector database from portfolio data"):
-        with st.spinner("Building vector index..."):
+    st.caption("Manage the FAISS vector index powering semantic retrieval.")
+    if st.button("🔄 Rebuild FAISS Index", help="Re-embed CSV and rebuild FAISS storage"):
+        with st.spinner("Building FAISS index..."):
             try:
                 from langchain_helper import create_vector_db
                 create_vector_db()
                 get_qa_chain.clear()
-                st.success("✅ Vector index rebuilt successfully")
+                st.success("✅ FAISS index rebuilt successfully")
             except Exception as e:
                 st.error(f"❌ Failed to rebuild index: {e}")
 
@@ -160,19 +160,19 @@ def render_diagnostics_section(config: Config) -> None:
     st.markdown("---")
     st.subheader("🔧 System Diagnostics")
     st.write("🔑 OpenAI API Key:", "✅ Present" if config.OPENAI_API_KEY else "❌ Missing")
-    st.write("🤖 AI Model:", config.OPENAI_EMBEDDING_MODEL)
+    st.write("🤖 Embedding Model:", config.OPENAI_EMBEDDING_MODEL)
     try:
         from langchain_helper import vector_db_exists
         index_status = "✅ Ready" if vector_db_exists() else "❌ Missing"
     except Exception:
         index_status = "❌ Error"
-    st.write("🗃️ Vector Index:", index_status)
+    st.write("🗃️ FAISS Index:", index_status)
     if st.button("🧪 Test Embeddings", help="Verify OpenAI embedding functionality"):
         try:
             from langchain_helper import _get_embeddings  # type: ignore
-            embeddings = _get_embeddings()
-            test_vector = embeddings.embed_query("test query")
-            st.success(f"✅ Embeddings working (dimension: {len(test_vector)})")
+            emb = _get_embeddings()
+            vec = emb.embed_query("health check test query")
+            st.success(f"✅ Embeddings OK (dim={len(vec)})")
         except Exception as e:
             st.error(f"❌ Embedding test failed: {e}")
 
@@ -208,27 +208,18 @@ def render_popular_questions_section() -> None:
         st.error(f"❌ Unable to load questions: {e}")
 
 def render_environment_status():
-    """Display runtime environment status (backend, versions, fallbacks)."""
+    """Display runtime environment status (FAISS backend)."""
     try:
         import importlib
-        backend = getattr(config, 'VECTOR_DB_BACKEND', 'faiss')
-        try:
-            from langchain_helper import HAS_FAISS, HAS_CHROMA  # type: ignore
-        except Exception:
-            HAS_FAISS = False  # type: ignore
-            HAS_CHROMA = False  # type: ignore
         versions = {}
-        for pkg in ['langchain', 'langchain_openai', 'streamlit']:
+        for pkg in ['langchain', 'langchain_openai', 'langchain_community', 'faiss']:  # faiss python module name varies
             try:
                 mod = importlib.import_module(pkg)
                 versions[pkg] = getattr(mod, '__version__', 'n/a')
             except Exception:
                 pass
-        status_line = f"Vector backend: {backend.upper()}"
-        if backend == 'faiss' and not HAS_FAISS:
-            status_line += " (FAISS not installed; set VECTOR_DB_BACKEND=chroma)"
         ver_str = ", ".join(f"{k} {v}" for k, v in versions.items())
-        st.info(f"Runtime: {status_line} | {ver_str}")
+        st.info(f"Runtime: Vector backend FAISS | {ver_str}")
     except Exception as e:
         st.warning(f"Environment status unavailable: {e}")
 
@@ -282,32 +273,45 @@ def process_question(question: str) -> None:
     try:
         from langchain_helper import vector_db_exists, create_vector_db
         if not vector_db_exists():
-            with st.spinner("🔄 Building knowledge base (first-time setup)..."):
+            with st.spinner("🔄 Building FAISS index (first-time setup)..."):
                 create_vector_db()
                 st.success("✅ Knowledge base ready!")
         start_time = time.time()
-        with st.spinner("🤔 Analyzing question and generating response..."):
-            chain = get_qa_chain()
-            analytics = get_analytics()
-            result = chain.invoke({"query": question})
-            response_time_ms = (time.time() - start_time) * 1000
-            answer = result.get("result", "I apologize, but I couldn't generate a proper response.")
-            source_docs = result.get("source_documents", [])
-            is_career_related = analyze_question_type(question)
-            linkedin_included = (
-                hasattr(config, 'LINKEDIN_URL') and config.LINKEDIN_URL and config.LINKEDIN_URL in answer
-            )
-            analytics.log_interaction(
-                question=question,
-                answer=answer,
-                source_count=len(source_docs),
-                response_time_ms=response_time_ms,
-                linkedin_included=linkedin_included,
-                is_career_related=is_career_related,
-                session_id=get_session_id()
-            )
-            render_answer_with_sources(answer, source_docs, question, config)
-            st.caption(f"⚡ Response generated in {response_time_ms:.0f}ms using {len(source_docs)} sources")
+        # Basic retry loop for transient failures
+        max_attempts = 3
+        backoff_base = 1.5
+        last_error = None
+        for attempt in range(1, max_attempts + 1):
+            try:
+                with st.spinner("🤔 Generating response (attempt %d/%d)..." % (attempt, max_attempts)):
+                    chain = get_qa_chain()
+                    analytics = get_analytics()
+                    result = chain.invoke({"query": question})
+                break
+            except Exception as e:
+                last_error = e
+                if attempt < max_attempts:
+                    time.sleep(backoff_base ** attempt)
+                else:
+                    raise
+        response_time_ms = (time.time() - start_time) * 1000
+        answer = result.get("result", "I apologize, but I couldn't generate a proper response.")
+        source_docs = result.get("source_documents", [])
+        is_career_related = analyze_question_type(question)
+        linkedin_included = (
+            hasattr(config, 'LINKEDIN_URL') and config.LINKEDIN_URL and config.LINKEDIN_URL in answer
+        )
+        analytics.log_interaction(
+            question=question,
+            answer=answer,
+            source_count=len(source_docs),
+            response_time_ms=response_time_ms,
+            linkedin_included=linkedin_included,
+            is_career_related=is_career_related,
+            session_id=get_session_id()
+        )
+        render_answer_with_sources(answer, source_docs, question, config)
+        st.caption(f"⚡ Response generated in {response_time_ms:.0f}ms using {len(source_docs)} sources")
     except Exception as e:
         st.error(f"❌ **Error processing question:** {str(e)}")
         st.info("💡 **Troubleshooting tips:**")
@@ -327,6 +331,10 @@ user_question = st.text_input(
     help="Ask about Noah's career, technical skills, projects, or background"
 )
 if user_question.strip():
+    # Simple context length safeguard (truncate very long user inputs)
+    if len(user_question) > 1200:
+        st.warning("Question truncated to 1200 characters for processing safety.")
+        user_question = user_question[:1200]
     if "user_question" in st.session_state:
         del st.session_state["user_question"]
     process_question(user_question.strip())
