@@ -24,7 +24,7 @@ streamlit run main.py
 
 ## Deploy on Streamlit Cloud
 
-- App file: `3_project_codebasics_q_and_a/main.py`
+- App file: `main.py`
 - Secrets: set `OPENAI_API_KEY` (and optionally `HEADSHOT_URL`, `HEADSHOT_NAME`)
 - The app auto-builds the FAISS index on first query if missing.
 

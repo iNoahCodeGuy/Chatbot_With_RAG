@@ -65,3 +65,13 @@ faiss_index/
 temp/
 tmp/
 /tmp
+
+# Branch and development artifacts
+*.orig
+*.rej
+.git-rewrite/
+*~.nib
+
+# Local development configuration
+.local/
+*.local
