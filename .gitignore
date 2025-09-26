@@ -64,3 +64,4 @@ faiss_index/
 # Temporary files
 temp/
 tmp/
+/tmp
