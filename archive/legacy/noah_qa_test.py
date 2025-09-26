@@ -54,7 +54,7 @@ def main():
             print("❌ noah_portfolio.csv not found!")
             return
             
-        loader = CSVLoader(file_path='noah_portfolio.csv', source_column="answer")
+        loader = CSVLoader(file_path='noah_portfolio.csv', source_column="Answer")
         data = loader.load()
         print(f"✅ Step 2: Loaded {len(data)} documents")
         

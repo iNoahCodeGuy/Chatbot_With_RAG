@@ -29,7 +29,7 @@ def main():
         
         # Initialize system
         llm = ChatOpenAI(model="gpt-4", temperature=0.1, openai_api_key=api_key)
-        loader = CSVLoader(file_path='noah_portfolio.csv', source_column="answer")
+        loader = CSVLoader(file_path='noah_portfolio.csv', source_column="Answer")
         data = loader.load()
         print(f"✅ Loaded {len(data)} documents")
         

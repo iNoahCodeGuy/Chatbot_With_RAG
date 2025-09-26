@@ -1,1 +1,0 @@
-# Archived legacy logging module. Streamlit app no longer uses this directly.

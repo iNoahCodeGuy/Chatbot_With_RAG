@@ -32,6 +32,7 @@ MANIFEST
 
 # Virtual environments
 venv/
+venv311/
 env/
 ENV/
 env.bak/
@@ -51,8 +52,12 @@ Thumbs.db
 # Project-specific
 # Vector database files
 faiss_index/
+chroma_index/
 *.faiss
 *.pkl
+
+# SQLite databases
+*.db
 
 # Jupyter Notebook checkpoints (any location)
 .ipynb_checkpoints/

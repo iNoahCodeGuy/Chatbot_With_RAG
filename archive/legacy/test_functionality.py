@@ -1,8 +1,8 @@
 # Test script for Noah's portfolio Q&A functionality
 
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain.document_loaders.csv_loader import CSVLoader
-from langchain.vectorstores import FAISS
+from langchain_community.document_loaders import CSVLoader
+from langchain_community.vectorstores import FAISS
 from langchain.prompts import PromptTemplate
 from langchain.chains import RetrievalQA
 from dotenv import load_dotenv
@@ -28,7 +28,7 @@ print("✅ OpenAI models initialized")
 
 print("\n2. Loading Noah's portfolio data...")
 # Load Noah's portfolio CSV
-loader = CSVLoader(file_path='noah_portfolio.csv', source_column="answer")
+loader = CSVLoader(file_path='noah_portfolio.csv', source_column="Answer")
 data = loader.load()
 print(f"✅ Loaded {len(data)} documents about Noah's background")
 

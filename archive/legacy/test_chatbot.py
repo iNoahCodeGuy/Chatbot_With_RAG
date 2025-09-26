@@ -20,7 +20,7 @@ def test_chatbot():
     
     # Initialize components
     llm = ChatOpenAI(model="gpt-4", temperature=0.1, openai_api_key=api_key)
-    loader = CSVLoader(file_path='noah_portfolio.csv', source_column="answer")
+    loader = CSVLoader(file_path='noah_portfolio.csv', source_column="Answer")
     data = loader.load()
     openai_embeddings = OpenAIEmbeddings(openai_api_key=api_key)
     vectordb = FAISS.from_documents(documents=data, embedding=openai_embeddings)
