@@ -1,25 +1,10 @@
-# Core LangChain packages - Updated for Python 3.11 compatibility (2025-01-18)
-langchain==0.2.11
-langchain-openai==0.1.17
-langchain-community==0.2.10
-
-# Web framework (Streamlit only)  
-streamlit==1.39.0
-
-# Environment and configuration
-python-dotenv==1.0.1
-
-# Vector database (compatible with Python 3.11)
-faiss-cpu==1.8.0
-
-# OpenAI utilities
-tiktoken==0.7.0
-
-# Compatibility
+# Production dependencies - Python 3.13 compatible
+langchain==0.3.27
+langchain-openai==0.3.33  
+langchain-community==0.3.29
+streamlit==1.50.0
+python-dotenv==1.1.1
+faiss-cpu==1.12.0
+tiktoken==0.11.0
 protobuf==4.25.3
-
-# Data processing
 pandas==2.2.2
-
-# Optional: Plotting and visualization (for enhanced analytics dashboard)
-# plotly==5.24.1
