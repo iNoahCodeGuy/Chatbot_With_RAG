@@ -230,6 +230,36 @@ class ChatbotAnalytics:
             "database_size_mb": round(db_size_mb, 2),
             "database_path": self.db_path
         }
+    
+    def get_popular_questions(self, limit: int = 5, days: int = 30) -> List[Dict[str, Any]]:
+        """Get the most popular/frequently asked questions."""
+        cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
+        
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            
+            # Get question frequency, grouping similar questions
+            cursor.execute("""
+                SELECT question, COUNT(*) as frequency,
+                       AVG(response_time_ms) as avg_response_time,
+                       MAX(timestamp) as last_asked
+                FROM question_analytics 
+                WHERE timestamp >= ?
+                GROUP BY LOWER(TRIM(question))
+                ORDER BY frequency DESC, last_asked DESC
+                LIMIT ?
+            """, (cutoff_date, limit))
+            
+            results = []
+            for row in cursor.fetchall():
+                results.append({
+                    "question": row[0],
+                    "frequency": row[1], 
+                    "avg_response_time_ms": round(row[2], 1) if row[2] else None,
+                    "last_asked": row[3]
+                })
+            
+            return results
 
 
 # Utility function for easy integration

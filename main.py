@@ -150,17 +150,44 @@ with st.sidebar:
             st.error(f"Embedding test failed: {e}")
 
     st.markdown("---")
-    st.subheader("Sample Questions")
-    samples: List[str] = [
-        "Walk me through Noah's career so far",
-        "What is Noah's professional background?",
-        "List Noah's top technical skills",
-        "What projects has Noah delivered?",
-        "How can I connect with Noah?",
-    ]
-    for s in samples:
-        if st.button(s, key=f"sample-{s[:10]}"):
-            st.session_state["last_question"] = s
+    st.subheader("Popular Questions")
+    try:
+        analytics = _get_cached_analytics()
+        popular = analytics.get_popular_questions(limit=5, days=30)
+        
+        if popular:
+            st.caption("Most asked questions in the last 30 days:")
+            for i, item in enumerate(popular, 1):
+                question = item['question']
+                frequency = item['frequency']
+                if st.button(f"{question} ({frequency}×)", key=f"popular-{i}", help=f"Asked {frequency} times"):
+                    st.session_state["last_question"] = question
+        else:
+            # Fallback to sample questions if no popular data yet
+            st.caption("Sample questions to get you started:")
+            samples: List[str] = [
+                "Walk me through Noah's career so far",
+                "What is Noah's professional background?",
+                "List Noah's top technical skills",
+                "What projects has Noah delivered?",
+                "How can I connect with Noah?",
+            ]
+            for s in samples:
+                if st.button(s, key=f"sample-{s[:10]}"):
+                    st.session_state["last_question"] = s
+    except Exception as e:
+        # Fallback to sample questions on error
+        st.caption("Sample questions to get you started:")
+        samples: List[str] = [
+            "Walk me through Noah's career so far",
+            "What is Noah's professional background?",
+            "List Noah's top technical skills",
+            "What projects has Noah delivered?",
+            "How can I connect with Noah?",
+        ]
+        for s in samples:
+            if st.button(s, key=f"sample-{s[:10]}"):
+                st.session_state["last_question"] = s
 
 st.markdown("Write a question about Noah's background, skills, or projects.")
 q = st.text_input(
