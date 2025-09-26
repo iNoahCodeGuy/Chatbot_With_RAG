@@ -1,58 +1,44 @@
 # Streamlit Cloud Deployment Fix Summary
 
-## Issue
-Streamlit Cloud deployment was failing with inconsistent behavior - sometimes successfully installing updated dependencies (`faiss-cpu==1.12.0`), other times reverting to old incompatible versions (`faiss-cpu==1.8.0.post1`), suggesting caching issues.
+## Current Target State (Modern Stack)
+We are standardizing on Python 3.13 (Streamlit Cloud default) with the modern LangChain 0.3.x API (invoke pattern) and FAISS 1.12.0 (Python 3.13 wheels available). `runtime.txt` was removed because Streamlit ignores it for Python pinning and defaults to latest supported minor anyway. If FAISS wheel issues occur transiently, fallback to Chroma (`VECTOR_DB_BACKEND=chroma`).
 
-## Root Cause Analysis
-1. **Python Version Mismatch**: Originally using Python 3.13.7 which has compatibility issues with some dependencies on Streamlit Cloud
-2. **LangChain API Changes**: Using newer LangChain versions with `.invoke()` method while dependencies were mixed versions
-3. **Caching Issues**: Streamlit Cloud appeared to cache old dependency versions intermittently
+## Original Issue (Historical)
+Streamlit Cloud deployment was failing with inconsistent behavior - sometimes successfully installing updated dependencies (`faiss-cpu==1.12.0`), other times reverting to old incompatible versions (`faiss-cpu==1.8.0.post1`), indicating a cached/legacy requirements state or branch mismatch.
 
-## Solution Implemented
+## Root Cause Hypotheses
+1. Stale build cache referencing an earlier commit containing downgraded requirements.
+2. Possible secondary requirements file during earlier iterations (now removed).
+3. Transient PyPI / wheel resolution timing causing fallback attempts.
+4. Branch / repository path mismatch in Streamlit app settings (case sensitivity in folder name `Chatbot_With_RAG-1`).
 
-### 1. Python Version Downgrade
-- **Added `runtime.txt`**: Specified Python 3.11.7 (more stable on Streamlit Cloud)
-- **Reasoning**: Python 3.11 has better package compatibility and is well-supported on cloud platforms
+## Resolved Actions
+- Ensured only one root-level `requirements.txt` (updated with cache-bust comment).
+- Removed `runtime.txt` to avoid misleading Python pin intent.
+- Confirmed modern code uses `chain.invoke()`; no legacy `.call()` / direct chain invocation remains.
+- Added explicit cache-busting comment line to `requirements.txt`.
+- Added FAISS→Chroma fallback logic (runtime) in `langchain_helper.py`.
 
-### 2. Dependency Stabilization
-Updated `requirements.txt` with proven stable versions:
-```
-langchain==0.2.11          (was 0.3.27)
-langchain-openai==0.1.17   (was 0.3.33)
-langchain-community==0.2.10 (was 0.3.29)
-streamlit==1.39.0          (was 1.50.0)
-faiss-cpu==1.8.0           (was 1.12.0)
-python-dotenv==1.0.1       (was 1.1.1)
-tiktoken==0.7.0            (was 0.11.0)
-```
+## Next Deployment Steps
+1. In Streamlit Cloud dashboard: confirm the repository + branch point to this folder (case-sensitive path).
+2. Trigger a fresh deploy (a trivial commit already added a cache-busting comment).
+3. Watch logs: you should see `faiss-cpu==1.12.0` install. If failure: set a secret `VECTOR_DB_BACKEND="chroma"` and redeploy.
+4. First run will build the FAISS index (or Chroma) from `noah_portfolio.csv`.
+5. Ask a couple of questions, then verify Popular Questions populate.
 
-### 3. API Compatibility Fix
-- **Reverted LangChain calls**: Changed back from `chain.invoke()` to `chain()` for older LangChain versions
-- **Updated files**: `main.py`, `single_question.py`
+## Rollback (Not Recommended Now)
+If you must revert temporarily to Python 3.11-era stack, you would reintroduce a `runtime.txt` specifying 3.11 and pin: `faiss-cpu==1.8.0`, `langchain==0.2.11` and revert invoke usage. This is documented only for historical traceability—current codebase expects modern versions.
 
-### 4. Cache Invalidation Strategy
-- **Added timestamp comments** to force file changes
-- **Created runtime.txt** as new deployment signal
-- **Multiple commit/push cycles** to ensure fresh deployment
+## Health Check Recommendation
+Add (optional) lightweight `/health` style script or a small `health_check.py` to import config, verify OpenAI key presence, and attempt an embeddings ping.
 
-## Files Modified
-1. `requirements.txt` - Downgraded to stable Python 3.11 compatible versions
-2. `runtime.txt` - Created to specify Python 3.11.7  
-3. `main.py` - Fixed LangChain API calls for compatibility
-4. `single_question.py` - Fixed LangChain API calls for compatibility
+## Monitoring
+Use the sidebar Diagnostics section (embedding test + index status). Analytics DB (`chatbot_analytics.db`) will appear after first logged interaction.
 
-## Result
-- ✅ **Local Validation**: Core system works with new dependencies
-- ✅ **Git Push Success**: All changes committed and pushed to GitHub (commit e7bdf30)
-- ✅ **Added Value**: Popular questions feature implemented during the process
-- 🔄 **Deployment Status**: Streamlit Cloud should now deploy successfully with stable dependencies
+## Known Optional Enhancements
+- Implement context length safeguard & truncation.
+- Add exponential backoff wrapper for OpenAI rate limits.
+- Provide CONTRIBUTING.md / QUICK_START.md for juniors.
 
-## Additional Features Added
-- **Popular Questions Feature**: Shows most commonly asked questions to users
-- **Analytics Integration**: Dynamic question suggestions based on actual usage patterns
-- **Graceful Fallback**: Shows sample questions if no analytics data available yet
-
-## Next Steps
-1. Monitor Streamlit Cloud deployment logs to confirm successful deployment
-2. Test the popular questions feature once deployed  
-3. Consider implementing caching strategies if needed for performance
+---
+Last Updated: 2025-09-26

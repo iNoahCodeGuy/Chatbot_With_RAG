@@ -1,3 +1,4 @@
+# Build cache bust: 2025-09-26
 # Production dependencies - Python 3.13 compatible
 langchain==0.3.27
 langchain-openai==0.3.33  

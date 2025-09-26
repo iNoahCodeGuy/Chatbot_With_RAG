@@ -17,19 +17,25 @@ Author: Senior Generative AI Applications Engineer
 
 import os
 from typing import Optional
-from langchain_community.vectorstores import FAISS
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_community.document_loaders.csv_loader import CSVLoader
-from langchain.prompts import PromptTemplate
-from langchain.chains import RetrievalQA
-from config import config
 
-# Optional Chroma fallback support
+try:
+    from langchain_community.vectorstores import FAISS
+    HAS_FAISS = True
+except Exception as e:  # pragma: no cover - environment without faiss
+    HAS_FAISS = False
+    _FAISS_IMPORT_ERROR = e
+
 try:
     from langchain_community.vectorstores import Chroma
     HAS_CHROMA = True
 except ImportError:
     HAS_CHROMA = False
+
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_community.document_loaders.csv_loader import CSVLoader
+from langchain.prompts import PromptTemplate
+from langchain.chains import RetrievalQA
+from config import config
 
 # Global singletons for thread safety and performance
 _llm_instance: Optional[ChatOpenAI] = None
@@ -141,6 +147,12 @@ def create_vector_db() -> None:
     backend = getattr(config, "VECTOR_DB_BACKEND", "faiss").lower()
     
     if backend == "faiss":
+        if not HAS_FAISS:
+            if HAS_CHROMA:
+                print(f"FAISS unavailable ({_FAISS_IMPORT_ERROR}); auto-switching to Chroma...")
+                _create_chroma_index(documents)
+                return
+            raise RuntimeError(f"FAISS unavailable and Chroma not installed: {_FAISS_IMPORT_ERROR}")
         try:
             _create_faiss_index(documents)
             return
@@ -162,6 +174,8 @@ def _load_vector_database():
     backend = getattr(config, "VECTOR_DB_BACKEND", "faiss").lower()
     
     if backend == "faiss":
+        if not HAS_FAISS:
+            raise FileNotFoundError("FAISS backend selected but FAISS library unavailable; set VECTOR_DB_BACKEND=chroma")
         if not vector_db_exists():
             raise FileNotFoundError("FAISS index not found. Run create_vector_db() first.")
         
