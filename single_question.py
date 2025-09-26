@@ -66,7 +66,7 @@ print("=" * 50)
 
 # Get answer with timing
 start_time = time.time()
-result = chain.invoke({"query": question})  # Updated to use invoke() instead of deprecated __call__
+result = chain({"query": question})  # Using deprecated syntax for compatibility
 response_time_ms = (time.time() - start_time) * 1000
 
 answer = result['result']
