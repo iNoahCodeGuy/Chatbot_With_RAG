@@ -74,6 +74,16 @@ with st.sidebar:
         st.markdown("---")
         st.link_button("🔗 LinkedIn Profile", linkedin_url, help="View Noah's professional background", use_container_width=True)
 
+    # --- Privacy & How it works ---
+    st.markdown("---")
+    st.subheader("🔒 Privacy & How it works")
+    st.caption(
+        "- Your queries go to OpenAI for processing.\n"
+        "- No chat history is sent to third-party analytics.\n"
+        "- Minimal local analytics stored in SQLite (chatbot_analytics.db).\n"
+        "- Sources for answers are shown for transparency."
+    )
+
     st.header("Knowledge Base")
     st.caption("Create or refresh the FAISS index from the portfolio CSV.")
     if st.button("🔄 Create / Refresh Index"):
