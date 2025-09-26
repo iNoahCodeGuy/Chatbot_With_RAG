@@ -12,8 +12,13 @@ def test_basic_functionality():
         from analytics import ChatbotAnalytics
         from config import Config
         
+        # Ensure a clean test database
+        test_db = "test_temp.db"
+        if os.path.exists(test_db):
+            os.remove(test_db)
+        
         # Test analytics creation
-        analytics = ChatbotAnalytics("test_temp.db")
+        analytics = ChatbotAnalytics(test_db)
         
         # Test logging
         analytics.log_interaction(
@@ -36,8 +41,8 @@ def test_basic_functionality():
         assert len(recent) == 1, "Should have 1 recent interaction"
         
         # Cleanup
-        if os.path.exists("test_temp.db"):
-            os.remove("test_temp.db")
+        if os.path.exists(test_db):
+            os.remove(test_db)
         
         print("✅ Analytics system working correctly!")
         return True

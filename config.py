@@ -3,9 +3,15 @@ Configuration management for the Portfolio Q&A system.
 """
 import os
 from typing import Optional
-from dotenv import load_dotenv
 
-# Load environment variables
+# Make dotenv optional for resilience
+try:
+    from dotenv import load_dotenv  # type: ignore
+except Exception:  # pragma: no cover - fallback when python-dotenv isn't available
+    def load_dotenv(*args, **kwargs):  # type: ignore
+        return False
+
+# Load environment variables (no-op if load_dotenv is fallback)
 load_dotenv()
 
 class Config:

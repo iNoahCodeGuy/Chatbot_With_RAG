@@ -4,6 +4,7 @@ import json
 import os
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
+from collections import Counter
 
 class ChatbotAnalytics:
     def __init__(self, db_path: str = "chatbot_analytics.db"):
@@ -92,8 +93,6 @@ class ChatbotAnalytics:
     
     def get_analytics_summary(self, days: int = 30) -> Dict[str, Any]:
         """Get analytics summary for the last N days."""
-        from datetime import datetime, timedelta
-        
         cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
         
         with sqlite3.connect(self.db_path) as conn:
@@ -127,17 +126,24 @@ class ChatbotAnalytics:
             """, (cutoff_date,))
             avg_response_time = cursor.fetchone()[0]
             
-            # Most common question patterns (first 3 words)
-            cursor.execute("""
-                SELECT SUBSTR(question, 1, INSTR(question || ' ', ' ', INSTR(question || ' ', ' ') + 1) - 1) as pattern,
-                       COUNT(*) as count
-                FROM question_analytics 
+            # Fetch questions and compute common patterns in Python (first 3 words)
+            cursor.execute(
+                """
+                SELECT question FROM question_analytics 
                 WHERE timestamp >= ?
-                GROUP BY pattern
-                ORDER BY count DESC
-                LIMIT 5
-            """, (cutoff_date,))
-            common_patterns = cursor.fetchall()
+                """,
+                (cutoff_date,)
+            )
+            questions = [row[0] for row in cursor.fetchall()]
+        
+        counter: Counter[str] = Counter()
+        for q in questions:
+            if not q:
+                continue
+            first_three = " ".join(q.strip().split()[:3]).lower()
+            if first_three:
+                counter[first_three] += 1
+        common_patterns = counter.most_common(5)
             
         return {
             "period_days": days,
@@ -172,10 +178,9 @@ class ChatbotAnalytics:
         import csv
         
         where_clause = ""
-        params = []
+        params: List[Any] = []
         
         if days:
-            from datetime import datetime, timedelta
             cutoff_date = (datetime.now() - timedelta(days=days)).isoformat()
             where_clause = "WHERE timestamp >= ?"
             params.append(cutoff_date)
