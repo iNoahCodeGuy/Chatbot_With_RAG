@@ -1,0 +1,30 @@
+# Noah's AI Assistant - Production Dependencies
+# Clean, minimal dependencies for production deployment
+
+# Core Framework
+streamlit==1.50.0
+
+# LangChain RAG Components
+langchain==0.3.27
+langchain-openai==0.3.33
+langchain-community==0.3.29
+
+# Vector Store
+faiss-cpu>=1.9.0
+
+# Data Processing
+pandas==2.2.2
+
+# Configuration & Environment
+python-dotenv==1.1.1
+
+# OpenAI Integration
+tiktoken==0.11.0
+
+# Data Serialization
+protobuf==4.25.3
+
+# Development & Debug (remove in production)
+# pytest==7.4.0
+# black==23.7.0
+# mypy==1.5.0
