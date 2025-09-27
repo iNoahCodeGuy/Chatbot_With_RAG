@@ -1,1 +1,0 @@
-// Archived legacy JS for Flask UI. Active app is Streamlit (main.py).

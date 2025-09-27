@@ -1,2 +1,0 @@
-This project uses Streamlit Secrets for OPENAI_API_KEY.
-Legacy files were archived on 2025-09-23 to simplify the Streamlit app structure.
